@@ -1,0 +1,7 @@
+[package]
+name = "torrenting"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lava_torrent = "0.11.1"

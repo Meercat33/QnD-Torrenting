@@ -11,3 +11,4 @@ native-tls = "0.2.14"
 percent-encoding = "2.3.2"
 thiserror = "2.0.16"
 url = "2.5.7"
+tokio = { version = "1", features = ["full"] }

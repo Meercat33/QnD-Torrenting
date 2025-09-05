@@ -1,7 +1,8 @@
 use crate::errors;
+use crate::types::Peer;
 
 use lava_torrent::torrent::v1::Torrent;
-use std::{io::{Write}, net::{self, TcpStream, Ipv4Addr, SocketAddr}};
+use std::{io::{Write}, net::{self, TcpStream, Ipv4Addr}};
 use url::Url;
 use errors::BTError;
 use percent_encoding::{percent_encode, NON_ALPHANUMERIC};
@@ -28,8 +29,8 @@ pub fn get_peers<'a>(bencoded_data: Option<BencodeRef<'a>>) -> Option<Vec<u8>> {
     Some(peers.to_vec())
 }
 
-pub fn peer_vec_to_list_of_ips(peer_vec: &mut Vec<u8>) -> Vec<SocketAddr> {
-    let peers_vec_sockets: Vec<SocketAddr> = Vec::new();
+pub fn peer_vec_to_list_of_ips(peer_vec: &mut Vec<u8>) -> Vec<Peer> {
+    let mut peers_vec_sockets: Vec<Peer> = Vec::new();
     while peer_vec.len() > 0 {
         let mut ip_bytes = peer_vec.drain(..6);
 
@@ -43,8 +44,7 @@ pub fn peer_vec_to_list_of_ips(peer_vec: &mut Vec<u8>) -> Vec<SocketAddr> {
         let mut port_num = (ip_bytes.next().unwrap() as u16) << 8;
         port_num = port_num | ip_bytes.next().unwrap() as u16;
         
-        let socket = SocketAddr::new(net::IpAddr::V4(ip), port_num);
-        println!("{:?}", socket);
+        peers_vec_sockets.push(Peer::new(ip, port_num));
     }
 
     peers_vec_sockets

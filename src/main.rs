@@ -1,11 +1,13 @@
 mod errors;
-mod helpers;
+mod tracker_funcs;
+mod types;
+mod handle_peers;
 
 use lava_torrent::torrent::v1::Torrent;
 use std::{io::{Read, Write}};
 use url::Url;
 use errors::BTError;
-use helpers::{get_peers, handle_http_tracker, handle_https_tracker, split_http_from_bencoded_bytes, peer_vec_to_list_of_ips};
+use tracker_funcs::{get_peers, handle_http_tracker, handle_https_tracker, split_http_from_bencoded_bytes, peer_vec_to_list_of_ips};
 use bip_bencode::{BDecodeOpt, BencodeRef};
 
 trait ReadWrite: Read + Write {}
@@ -37,12 +39,13 @@ fn main() -> Result<(), BTError> {
 
     let peers = get_peers(BencodeRef::decode(split_response.1, BDecodeOpt::default()).ok()); // ERR: No Peers Connected
 
-    match peers {
-        Some(mut p) => {
-            peer_vec_to_list_of_ips(&mut p);
-        }
-        None => { println!("No Peers Connected") }
-    }
+    let peers = if peers.is_some() {
+        peer_vec_to_list_of_ips(&mut peers.unwrap())
+    } else {
+        panic!("No Peers Connected")
+    };
+
+    println!("{:?}", peers);
 
     Ok(())
 

@@ -34,7 +34,6 @@ impl Handshake {
 pub struct Peer {
     pub ip: Ipv4Addr,
     pub port: u16,
-    pub socket: SocketAddr,
 }
 
 impl Peer {
@@ -42,7 +41,6 @@ impl Peer {
         Self {
             ip: ip,
             port: port,
-            socket: SocketAddr::new(IpAddr::V4(ip), port),
         }
     }
 }

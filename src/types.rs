@@ -1,4 +1,5 @@
-use std::{net::{IpAddr, Ipv4Addr, SocketAddr}};
+use std::{net::{Ipv4Addr}};
+
 
 pub struct Handshake {
     pub length: u8,
@@ -9,7 +10,7 @@ pub struct Handshake {
 }
 
 impl Handshake {
-    pub fn new(info_hash: &[u8; 20]) -> Self {
+    pub fn new(info_hash: &Vec<u8>) -> Self {
         Self {
             length: 19,
             protocol: b"BitTorrent protocol".to_vec(),
@@ -34,13 +35,15 @@ impl Handshake {
 pub struct Peer {
     pub ip: Ipv4Addr,
     pub port: u16,
+    pub associated_torrent: Vec<u8>
 }
 
 impl Peer {
-    pub fn new(ip: Ipv4Addr, port: u16) -> Self {
+    pub fn new(ip: Ipv4Addr, port: u16, info_hash: Vec<u8>) -> Self {
         Self {
             ip: ip,
             port: port,
+            associated_torrent: info_hash
         }
     }
 }

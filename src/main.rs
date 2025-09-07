@@ -8,6 +8,7 @@ use std::{io::{Read, Write}};
 use url::Url;
 use errors::BTError;
 use tracker_funcs::{get_peers, handle_http_tracker, handle_https_tracker, split_http_from_bencoded_bytes, peer_vec_to_list_of_ips};
+use handle_peers::{do_handshake};
 use bip_bencode::{BDecodeOpt, BencodeRef};
 
 trait ReadWrite: Read + Write {}
@@ -20,9 +21,9 @@ fn main() -> Result<(), BTError> {
     let mut parsed_tracker_url = Url::parse(tracker)?;
 
     let mut stream: Box<dyn ReadWrite> = if parsed_tracker_url.scheme() == "https" {
-        Box::new(handle_https_tracker(&mut parsed_tracker_url, torrent)?)
+        Box::new(handle_https_tracker(&mut parsed_tracker_url, &torrent)?)
     } else if parsed_tracker_url.scheme() == "http" {
-        Box::new(handle_http_tracker(&mut parsed_tracker_url, torrent)?)
+        Box::new(handle_http_tracker(&mut parsed_tracker_url, &torrent)?)
     } else {
         panic!("Invalid tracker scheme: {}", parsed_tracker_url.scheme());
     };
@@ -40,12 +41,14 @@ fn main() -> Result<(), BTError> {
     let peers = get_peers(BencodeRef::decode(split_response.1, BDecodeOpt::default()).ok()); // ERR: No Peers Connected
 
     let peers = if peers.is_some() {
-        peer_vec_to_list_of_ips(&mut peers.unwrap())
+        peer_vec_to_list_of_ips(&mut peers.unwrap(), &torrent)
     } else {
         panic!("No Peers Connected")
     };
 
     println!("{:?}", peers);
+
+    do_handshake(peers.get(0).unwrap())?;
 
     Ok(())
 

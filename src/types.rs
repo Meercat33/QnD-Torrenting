@@ -16,7 +16,7 @@ impl Handshake {
             protocol: b"BitTorrent protocol".to_vec(),
             reserved: vec![0; 8],
             info_hash: info_hash.to_vec(),
-            peer_id: b"nicknicknicknicknick".to_vec()
+            peer_id: b"nickrust-28jd7l931ks".to_vec()
         }
     }
 
@@ -59,3 +59,5 @@ impl std::fmt::Debug for Peer {
         write!(f, "{}:{}", self.ip, self.port)
     }
 }
+
+// struct Bitfield {}

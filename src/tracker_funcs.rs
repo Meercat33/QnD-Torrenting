@@ -56,7 +56,7 @@ pub fn handle_http_tracker(tracker_url: &mut Url, torrent_file: &Torrent) -> Res
 
 
     tracker_url.query_pairs_mut()
-        .append_pair("peer_id", "nicknicknicknicknick")
+        .append_pair("peer_id", "nickrust-28jd7l931ks")
         .append_pair("port", "6881")
         .append_pair("uploaded", "0")
         .append_pair("downloaded", "0")
@@ -92,7 +92,7 @@ pub fn handle_https_tracker(tracker_url: &mut Url, torrent_file: &Torrent) -> Re
 
 
     tracker_url.query_pairs_mut()
-        .append_pair("peer_id", "nicknicknicknicknick")
+        .append_pair("peer_id", "nickrust-28jd7l931ks")
         .append_pair("port", "6881")
         .append_pair("uploaded", "0")
         .append_pair("downloaded", "0")

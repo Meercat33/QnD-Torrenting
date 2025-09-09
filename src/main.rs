@@ -4,17 +4,19 @@ mod types;
 mod handle_peers;
 
 use lava_torrent::torrent::v1::Torrent;
-use std::{io::{Read, Write}};
+use tokio::{net::TcpStream, task::JoinHandle};
+use std::io::{Error, Read, Write};
 use url::Url;
 use errors::BTError;
 use tracker_funcs::{get_peers, handle_http_tracker, handle_https_tracker, split_http_from_bencoded_bytes, peer_vec_to_list_of_ips};
-use handle_peers::{do_handshake};
+use handle_peers::{initialize_peer_connection};
 use bip_bencode::{BDecodeOpt, BencodeRef};
 
 trait ReadWrite: Read + Write {}
 impl<T: Read + Write> ReadWrite for T {}
 
-fn main() -> Result<(), BTError> {
+#[tokio::main]
+async fn main() -> Result<(), BTError> {
     let torrent = Torrent::read_from_file("/Users/nick/Documents/Coding/Rust/torrenting/sample2.torrent").unwrap();
 
     let tracker = torrent.announce.as_ref().unwrap();
@@ -46,10 +48,21 @@ fn main() -> Result<(), BTError> {
         panic!("No Peers Connected")
     };
 
-    println!("{:?}", peers);
+    eprintln!("{:?}", peers);
 
-    do_handshake(peers.get(0).unwrap())?;
+    let mut handles: Vec<JoinHandle<Result<TcpStream, Error>>> = Vec::new();
 
+    for peer in peers {
+        handles.push(tokio::spawn(async move {
+            initialize_peer_connection(&peer).await
+        }))
+    }
+    for handle in handles {
+        handle.await.unwrap()?;
+    }
     Ok(())
-
 }   
+
+//IDEA:
+// Always keep a listener up and create a generic parsing function to deal with the messages received from peers.
+// With message IDs

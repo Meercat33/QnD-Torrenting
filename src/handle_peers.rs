@@ -3,77 +3,46 @@ use std::time::Duration;
 
 use crate::types::{self, Handshake};
 
-use std::net::TcpStream;
-use std::io::{Read, Write};
-// use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::time::timeout;
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
-// #[tokio::main]
-// pub async fn do_handshake(peer: &types::Peer) -> Result<tokio::net::TcpStream, std::io::Error> {
-
-//     let handshake_req = Handshake::new(&peer.associated_torrent);
-
-//     let mut stream: TcpStream = TcpStream::connect(SocketAddr::new(std::net::IpAddr::V4(peer.ip), peer.port)).await?;
-//     stream.write_all(&handshake_req.bytes()).await?;
-
-//     let mut response = Vec::<u8>::new();
-//     stream.read_to_end(&mut response).await?;
-
-//     println!("{}", String::from_utf8_lossy(&response));
-
-//     Ok(stream)
-//  }
-
-pub fn do_handshake(peer: &types::Peer) -> Result<std::net::TcpStream, std::io::Error> {
+pub async fn initialize_peer_connection(peer: &types::Peer) -> Result<TcpStream, std::io::Error> {
 
     let handshake_req = Handshake::new(&peer.associated_torrent);
 
-    let mut stream: std::net::TcpStream = TcpStream::connect_timeout(
-        SocketAddr::new(std::net::IpAddr::V4(peer.ip), peer.port),
-        Duration::from_secs(3)
-    )?;
+    let stream  = TcpStream::connect(
+        SocketAddr::new(std::net::IpAddr::V4(peer.ip), peer.port)
+    );
 
-    stream.set_read_timeout(Some(Duration::from_secs(3))).expect("Could not set read timeout");
-    stream.write_all(&handshake_req.bytes())?;
+    let mut stream = timeout(Duration::from_secs(3), stream).await??;
 
-    let mut pstrlen_buf = [0u8; 20];
-    let bytes_read: Result<Option<usize>, std::io::Error> = match stream.read(&mut pstrlen_buf) {
-        Ok(0) => {
-            eprintln!("Peer closed the connection.");
-            Ok(None)
-        },
-        Ok(n) => {
-            eprintln!("Got {} bytes", n);
-            Ok(Some(n))
-        },
-        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut => {
-            eprintln!("Connection timed out");
-            Ok(None)
-        },
-        Err(ref e) if e.kind() == std::io::ErrorKind::ConnectionReset => {
-            eprintln!("Connection reset by peer");
-            Ok(None)
-        },
-        Err(ref e) if e.kind() == std::io::ErrorKind::ConnectionRefused => {
-            eprintln!("Connection refused by peer");
-            Ok(None)
-        }   
-        Err(e) => {
-            eprintln!("Read Error");
-            Err(e)
-        }
-    };
-    match bytes_read {
-        Ok(Some(n)) => println!("{} bytes read", n),
-        Ok(None) => eprintln!("No bytes read, possibly due to a timeout, closed connection, or reset connection"),
-        Err(e) => eprintln!("Something went wrong: {}", e)
-    };
+    stream.write_all(&handshake_req.bytes()).await?;
 
-    // process_handshake_response(&mut response);
+    let mut response_buf = vec![0u8; 68];
+    let bytes_read = Some(stream.read(&mut response_buf).await?);
 
+    process_handshake_response(&mut response_buf);
+
+    let mut bitfield_buf: Vec<u8> = vec![0u8; 4096];
+    stream.read(&mut bitfield_buf).await?;
     Ok(stream)
  }
 
- pub fn process_handshake_response(res: &mut Vec<u8>) -> () {
-    let proto = String::from_utf8_lossy(res.drain(..19).collect::<Vec<u8>>().as_slice()).into_owned();
-    println!("{}", proto)
+pub fn process_handshake_response(res: &[u8]) -> () {
+    let proto = String::from_utf8_lossy(&res[..20]).into_owned();
+    let reserve_bits = hex::encode(&res[20..28]);
+    let info_hash = hex::encode(&res[28..48]);
+    let peer_id = String::from_utf8_lossy(&res[48..68]).into_owned();
+//     println!("PROTOCOL\t{}\n\
+//             RESERVE BYTES\t{}\n\
+//             INFO HASH\t{}\n\
+//             PEER ID\t\t{}", 
+//     proto, reserve_bits, info_hash, peer_id
+// );
+    eprintln!("{peer_id}");
+ }
+
+ pub fn process_bitfield_response() { // CHECK WIRESHARK BYTES!!! THEY KNOW!!!
+    todo!();
  }

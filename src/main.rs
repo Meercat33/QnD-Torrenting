@@ -5,12 +5,13 @@ mod handle_peers;
 
 use lava_torrent::torrent::v1::Torrent;
 use tokio::{net::TcpStream, task::JoinHandle};
-use std::io::{Error, Read, Write};
+use std::{collections::HashMap, io::{Error, Read, Write}};
 use url::Url;
 use errors::BTError;
 use tracker_funcs::{get_peers, handle_http_tracker, handle_https_tracker, split_http_from_bencoded_bytes, peer_vec_to_list_of_ips};
-use handle_peers::{initialize_peer_connection};
+use handle_peers::{do_peer_connection};
 use bip_bencode::{BDecodeOpt, BencodeRef};
+use std::sync::{Arc, Mutex};
 
 trait ReadWrite: Read + Write {}
 impl<T: Read + Write> ReadWrite for T {}
@@ -52,17 +53,28 @@ async fn main() -> Result<(), BTError> {
 
     let mut handles: Vec<JoinHandle<Result<TcpStream, Error>>> = Vec::new();
 
-    for peer in peers {
-        handles.push(tokio::spawn(async move {
-            initialize_peer_connection(&peer).await
-        }))
-    }
+    // for peer in peers {
+    //     handles.push(tokio::spawn(async move {
+    //         do_peer_connection(&peer).await
+    //     }))
+    // }
+
+    let map: types::LockedPeerMap = Arc::new(Mutex::new(HashMap::new()));
+
+    handles.push(tokio::spawn(async move {
+        do_peer_connection(&peers[0], torrent, map.clone()).await
+    }));
+
     for handle in handles {
-        handle.await.unwrap()?;
+        if let Err(e) = handle.await {
+            if e.is_panic() {
+                eprintln!("Something happened on");
+            }
+        }
     }
     Ok(())
 }   
 
 //IDEA:
-// Always keep a listener up and create a generic parsing function to deal with the messages received from peers.
+// Always read from a listener and create a generic parsing function to deal with the messages received from peers.
 // With message IDs

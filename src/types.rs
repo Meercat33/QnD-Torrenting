@@ -1,6 +1,7 @@
-use std::{net::{Ipv4Addr}};
+use std::{collections::HashMap, net::Ipv4Addr};
+use std::sync::{Arc, Mutex};
 
-
+pub type LockedPeerMap = Arc<Mutex<HashMap<Ipv4Addr, Vec<u8>>>>;
 pub struct Handshake {
     pub length: u8,
     pub protocol: Vec<u8>,
@@ -35,15 +36,17 @@ impl Handshake {
 pub struct Peer {
     pub ip: Ipv4Addr,
     pub port: u16,
-    pub associated_torrent: Vec<u8>
+    pub associated_torrent: Vec<u8>,
+    pub peer_id: String
 }
 
 impl Peer {
-    pub fn new(ip: Ipv4Addr, port: u16, info_hash: Vec<u8>) -> Self {
+    pub fn new(ip: Ipv4Addr, port: u16, info_hash: Vec<u8>, peer_id: String) -> Self {
         Self {
             ip: ip,
             port: port,
-            associated_torrent: info_hash
+            associated_torrent: info_hash,
+            peer_id: peer_id
         }
     }
 }
@@ -60,4 +63,19 @@ impl std::fmt::Debug for Peer {
     }
 }
 
-// struct Bitfield {}
+
+pub enum Message {
+    Choke,
+    Unchoke,
+    Interested,
+    Have,
+    Bitfield {payload: Vec<u8>},
+    Piece,
+    Request,
+    KeepAlive,
+    NotInterested,
+    Cancel,
+    Port,
+    InvalidMessage
+} //TODO create structs and impl them for different 
+

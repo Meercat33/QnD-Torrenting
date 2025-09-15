@@ -44,7 +44,7 @@ pub fn peer_vec_to_list_of_ips(peer_vec: &mut Vec<u8>, torrent: &Torrent) -> Vec
         let mut port_num = (ip_bytes.next().unwrap() as u16) << 8;
         port_num = port_num | ip_bytes.next().unwrap() as u16;
         
-        peers_vec_sockets.push(Peer::new(ip, port_num, decode(torrent.info_hash()).expect("Invalid Hex")));
+        peers_vec_sockets.push(Peer::new(ip, port_num, decode(torrent.info_hash()).expect("Invalid Hex"), String::from("")));
     }
 
     peers_vec_sockets
